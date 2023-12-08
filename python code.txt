@@ -1,0 +1,36 @@
+!pip install pyTelegramBotAPI
+!pip install transformers
+
+import telebot
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+bot = telebot.TeleBot('Your Telegram Bot Token')
+model = AutoModelForSeq2SeqLM.from_pretrained('t5-base')
+tokenizer = AutoTokenizer.from_pretrained('t5-base')
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+bot.reply_to(message, """Welcome to the text summarizer bot! I can help you 
+summarize your text into a shorter and more concise version. Just send me the 
+text you want me to summarize and I'll do my best to help you out.""")
+@bot.message_handler(content_types=['text'])
+def summarize_text(message):
+text = message.text
+summary = summarize(text, model, tokenizer)
+bot.reply_to(message, summary)
+def summarize(text, model, tokenizer):
+inputs = tokenizer(text, return_tensors='pt', truncation=True, 
+max_length=1024)
+input_ids = inputs['input_ids']
+attention_mask = inputs['attention_mask']
+outputs = model.generate(
+input_ids=input_ids,
+attention_mask=attention_mask,
+max_length=150,
+num_beams=4,
+length_penalty=2.0,
+early_stopping=True
+)
+summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
+xii
+return summary
+if __name__ == '__main__':
+bot.polling()
